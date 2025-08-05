@@ -1,26 +1,22 @@
 require('dotenv').config();
 const { Bot } = require('grammy');
+const { transcribeVoice } = require('./stt');
 
-// Ініціалізуємо бота
 const bot = new Bot(process.env.BOT_TOKEN);
 
-// Команда /start
-bot.command('start', ctx => ctx.reply('Вітаю!'));
+bot.command('start', ctx => ctx.reply('Hi 👋'));
+bot.on('message:text', ctx => ctx.reply('Echo: ' + ctx.message.text));
 
-// На будь-який текст – ехо
-bot.on('message:text', ctx => {
-  ctx.reply('Echo: ' + ctx.message.text);
-});
-
-// Ловимо голосові
 bot.on('message:voice', async ctx => {
-  // отримуємо метадані файлу
-  const file = await ctx.getFile();
-
-  // просто відповідаємо, що ми його «спіймали»
-  await ctx.reply('Я отримав voice, зараз ще не обробляю 🙂');
+  await ctx.reply('Отримав голос, обробляю…');  
+  try {
+    const file = await ctx.getFile();
+    const text = await transcribeVoice(file.file_url);
+    await ctx.reply(text);
+  } catch (err) {
+    console.error(err);
+    await ctx.reply('Щось пішло не так при розпізнаванні 😕');
+  }
 });
 
-
-// Запускаємо Long Polling
 bot.start();
